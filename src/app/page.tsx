@@ -1,103 +1,174 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { 
+  useAllMeals, 
+  useSearchMeals, 
+  useMealsByCategory 
+} from '@/hooks/useRecipes';
+import RecipeCard from '@/components/RecipeCard';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
+import ErrorMessage from '@/components/ErrorMessage';
+import SearchBar from '@/components/SearchBar';
+
+type ViewMode = 'all' | 'search' | 'category';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Fetch data based on current view mode
+  const allMealsQuery = useAllMeals();
+  const searchQuery_result = useSearchMeals(viewMode === 'search' ? searchQuery : '');
+  const categoryQuery = useMealsByCategory(viewMode === 'category' ? selectedCategory : '');
+
+  // Determine which data to show
+  const getCurrentData = () => {
+    switch (viewMode) {
+      case 'search':
+        return {
+          data: searchQuery_result.data,
+          isLoading: searchQuery_result.isLoading,
+          error: searchQuery_result.error,
+          refetch: searchQuery_result.refetch,
+        };
+      case 'category':
+        return {
+          data: categoryQuery.data,
+          isLoading: categoryQuery.isLoading,
+          error: categoryQuery.error,
+          refetch: categoryQuery.refetch,
+        };
+      default:
+        return {
+          data: allMealsQuery.data,
+          isLoading: allMealsQuery.isLoading,
+          error: allMealsQuery.error,
+          refetch: allMealsQuery.refetch,
+        };
+    }
+  };
+
+  const { data: recipes, isLoading, error, refetch } = getCurrentData();
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setViewMode('search');
+  };
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(category);
+    setViewMode('category');
+  };
+
+  const handleShowAll = () => {
+    setViewMode('all');
+    setSearchQuery('');
+    setSelectedCategory('');
+  };
+
+  const getResultsText = () => {
+    if (!recipes) return '';
+    
+    const count = recipes.length;
+    switch (viewMode) {
+      case 'search':
+        return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${searchQuery}"`;
+      case 'category':
+        return `Showing ${count} recipe${count !== 1 ? 's' : ''} from ${selectedCategory}`;
+      default:
+        return `Explore our collection of ${count} delicious recipes`;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              Recipe Explorer Lite
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Discover delicious recipes from around the world
+            </p>
+          </div>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        <SearchBar
+          onSearch={handleSearch}
+          onCategoryFilter={handleCategoryFilter}
+          onShowAll={handleShowAll}
+          isLoading={isLoading}
+        />
+
+        {/* Loading State */}
+        {isLoading && <LoadingSkeleton count={12} />}
+        
+        {/* Error State */}
+        {error && (
+          <ErrorMessage 
+            message="Failed to load recipes. Please check your internet connection and try again."
+            onRetry={() => refetch()}
+          />
+        )}
+        
+        {/* Results */}
+        {recipes && recipes.length > 0 && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                {viewMode === 'search' ? 'Search Results' : 
+                 viewMode === 'category' ? `${selectedCategory} Recipes` : 
+                 'All Recipes'}
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                {getResultsText()}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {recipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          </>
+        )}
+        
+        {/* No Results */}
+        {recipes && recipes.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No recipes found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {viewMode === 'search' 
+                ? `No recipes found for "${searchQuery}". Try a different search term.`
+                : viewMode === 'category'
+                ? `No recipes found in the ${selectedCategory} category.`
+                : 'No recipes available at the moment.'
+              }
+            </p>
+            <button
+              onClick={handleShowAll}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+            >
+              Show All Recipes
+            </button>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
