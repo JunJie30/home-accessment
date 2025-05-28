@@ -4,18 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMeal } from '@/hooks/useRecipes';
 import FeedbackForm from '@/components/FeedbackForm';
-import { use } from 'react';
+import { useParams } from "next/navigation";
 
-interface RecipePageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function RecipePage({ params }: RecipePageProps) {
-  // Handle params as a Promise in Next.js 15
-  const resolvedParams = use(params);
-  const id = resolvedParams.id;
-  
-  const { data: recipe, isLoading, error } = useMeal(id);
+export default function RecipePage() {
+  const { id } = useParams();
+  const { data: recipe, isLoading, error } = useMeal(id as string);
 
   if (isLoading) {
     return (
