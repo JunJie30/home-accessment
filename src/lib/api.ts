@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://www.themealdb.com/api/json/v1/1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://www.themealdb.com/api/json/v1/1';
 
 // Get all categories
 export const getCategories = async (): Promise<string[]> => {
@@ -13,33 +13,49 @@ export const getCategories = async (): Promise<string[]> => {
   }
 };
 
-// Get all meals from all categories (using diverse approach)
+// Get all meals from all categories (optimized approach)
 export const getAllMeals = async (): Promise<ProcessedMeal[]> => {
   try {
-    const allMeals: ProcessedMeal[] = [];
-    const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     
-    // Fetch meals starting with different letters for diversity
-    for (const letter of letters) {
+    // Strategy: Use fewer categories and fewer meals per category, but process in parallel
+    const categories = ['Chicken', 'Seafood', 'Beef', 'Dessert']; // Reduced from 8 to 4 categories
+    const mealsPerCategory = 6; // Reduced from 10 to 6 per category
+    
+    // Process all categories in parallel instead of sequentially
+    const categoryPromises = categories.map(async (category) => {
       try {
-        const meals = await searchMealsByLetter(letter);
-        // Take first 3 meals from each letter to avoid too many API calls
-        const limitedMeals = meals.slice(0, 3);
-        allMeals.push(...limitedMeals);
+        const response = await axios.get<MealsResponse>(`${API_BASE_URL}/filter.php?c=${category}`);
         
-        // Stop if we have enough meals
-        if (allMeals.length >= 30) break;
+        if (response.data.meals) {
+          // Take fewer meals but process them in parallel
+          const basicMeals = response.data.meals.slice(0, mealsPerCategory);
+          
+          // Fetch all meal details for this category in parallel
+          const mealPromises = basicMeals.map(basicMeal => getMealById(basicMeal.idMeal));
+          const fullMeals = await Promise.allSettled(mealPromises);
+          
+          // Filter out any failed requests and return successful ones
+          return fullMeals
+            .filter((result): result is PromiseFulfilledResult<ProcessedMeal | null> => 
+              result.status === 'fulfilled' && result.value !== null
+            )
+            .map(result => result.value as ProcessedMeal);
+        }
+        return [];
       } catch (error) {
-        console.error(`Error fetching meals for letter ${letter}:`, error);
+        console.error(`Error fetching category ${category}:`, error);
+        return [];
       }
-    }
+    });
+
+    // Wait for all categories to complete in parallel
+    const categoryResults = await Promise.allSettled(categoryPromises);
     
-    // If we don't have enough meals, supplement with random ones
-    if (allMeals.length < 20) {
-      const randomMeals = await getRandomMeals(20 - allMeals.length);
-      allMeals.push(...randomMeals.filter(meal => !allMeals.find(m => m.id === meal.id)));
-    }
-    
+    // Flatten all results
+    const allMeals = categoryResults
+      .filter((result): result is PromiseFulfilledResult<ProcessedMeal[]> => result.status === 'fulfilled')
+      .flatMap(result => result.value);
+
     return allMeals;
   } catch (error) {
     console.error('Error fetching all meals:', error);
@@ -47,33 +63,11 @@ export const getAllMeals = async (): Promise<ProcessedMeal[]> => {
   }
 };
 
-// Get random meals for the home page (keeping this for fallback)
-export const getRandomMeals = async (count: number = 12): Promise<ProcessedMeal[]> => {
-  const meals: ProcessedMeal[] = [];
-  
-  // Fetch multiple random meals
-  for (let i = 0; i < count; i++) {
-    try {
-      const response = await axios.get<MealsResponse>(`${API_BASE_URL}/random.php`);
-      if (response.data.meals && response.data.meals[0]) {
-        const meal = processMeal(response.data.meals[0]);
-        // Avoid duplicates
-        if (!meals.find(m => m.id === meal.id)) {
-          meals.push(meal);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching random meal:', error);
-    }
-  }
-  
-  return meals;
-};
-
 // Get meal by ID
 export const getMealById = async (id: string): Promise<ProcessedMeal | null> => {
   try {
     const response = await axios.get<MealsResponse>(`${API_BASE_URL}/lookup.php?i=${id}`);
+        
     if (response.data.meals && response.data.meals[0]) {
       return processMeal(response.data.meals[0]);
     }
@@ -98,24 +92,11 @@ export const searchMealsByName = async (name: string): Promise<ProcessedMeal[]> 
   }
 };
 
-// Search meals by first letter
-export const searchMealsByLetter = async (letter: string): Promise<ProcessedMeal[]> => {
-  try {
-    const response = await axios.get<MealsResponse>(`${API_BASE_URL}/search.php?f=${letter}`);
-    if (response.data.meals) {
-      return response.data.meals.map(processMeal);
-    }
-    return [];
-  } catch (error) {
-    console.error('Error searching meals by letter:', error);
-    return [];
-  }
-};
-
 // Get meals by category
 export const getMealsByCategory = async (category: string): Promise<ProcessedMeal[]> => {
   try {
     const response = await axios.get<MealsResponse>(`${API_BASE_URL}/filter.php?c=${category}`);
+        
     if (response.data.meals) {
       // Filter endpoint returns basic info, fetch full details for first few
       const basicMeals = response.data.meals.slice(0, 12);
@@ -131,7 +112,7 @@ export const getMealsByCategory = async (category: string): Promise<ProcessedMea
           console.error(`Error fetching full meal details for ${basicMeal.idMeal}:`, error);
         }
       }
-      
+            
       return fullMeals;
     }
     return [];
@@ -158,6 +139,8 @@ const processMeal = (meal: Meal): ProcessedMeal => {
     }
   }
   
+  const processedTags = meal.strTags ? meal.strTags.split(',').map(tag => tag.trim()) : [];
+  
   return {
     id: meal.idMeal,
     name: meal.strMeal,
@@ -165,7 +148,7 @@ const processMeal = (meal: Meal): ProcessedMeal => {
     area: meal.strArea,
     instructions: meal.strInstructions,
     image: meal.strMealThumb,
-    tags: meal.strTags ? meal.strTags.split(',').map(tag => tag.trim()) : [],
+    tags: processedTags,
     youtube: meal.strYoutube,
     ingredients,
     source: meal.strSource,

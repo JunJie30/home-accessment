@@ -1,57 +1,59 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCategories } from '@/hooks/useRecipes';
+import { useSearchParams } from 'next/navigation';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
-  onCategoryFilter: (category: string) => void;
   onShowAll: () => void;
   isLoading?: boolean;
 }
 
 export default function SearchBar({ 
   onSearch, 
-  onCategoryFilter, 
   onShowAll, 
   isLoading = false 
 }: SearchBarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const { data: categories } = useCategories();
+  const searchParams = useSearchParams();
+  
+  // Get current values from URL params
+  const urlSearch = searchParams.get('search') || '';
+  
+  // Local state synced with URL params
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  
+  // Track if the search change came from user input or URL sync
+  const [isUserInput, setIsUserInput] = useState(false);
 
-  // Debounce search
+  // Sync local state with URL params when they change
   useEffect(() => {
+    setSearchQuery(urlSearch);
+    setIsUserInput(false); // Mark as URL sync, not user input
+  }, [urlSearch]);
+
+  // Debounce search - only trigger for user input, not URL syncing
+  useEffect(() => {
+    if (!isUserInput) return; // Don't trigger for URL syncing
+    
     const timer = setTimeout(() => {
       if (searchQuery.length > 2) {
         onSearch(searchQuery);
-      } else if (searchQuery.length === 0) {
+      } else if (searchQuery.length === 0 && urlSearch) {
+        // If user cleared search, show all
         onShowAll();
       }
-    }, 500);
+    }, 1200);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, onSearch, onShowAll]);
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSearchQuery(''); // Clear search when filtering by category
-    
-    if (category === '') {
-      onShowAll();
-    } else {
-      onCategoryFilter(category);
-    }
-  };
+  }, [searchQuery, isUserInput, onSearch, onShowAll, urlSearch]);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
-    setSelectedCategory(''); // Clear category when searching
+    setIsUserInput(true); // Mark as user input
   };
 
-  const clearAll = () => {
+  const clearSearch = () => {
     setSearchQuery('');
-    setSelectedCategory('');
     onShowAll();
   };
 
@@ -80,7 +82,7 @@ export default function SearchBar({
             />
             {searchQuery && (
               <button
-                onClick={() => handleSearchChange('')}
+                onClick={clearSearch}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
                 <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,52 +92,12 @@ export default function SearchBar({
             )}
           </div>
         </div>
-
-        {/* Category Filter */}
-        <div className="lg:w-64">
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Filter by Category
-          </label>
-          <select
-            id="category"
-            value={selectedCategory}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-            disabled={isLoading}
-          >
-            <option value="">All Categories</option>
-            {categories?.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Clear Button */}
-        {(searchQuery || selectedCategory) && (
-          <div className="flex items-end">
-            <button
-              onClick={clearAll}
-              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium"
-              disabled={isLoading}
-            >
-              Clear All
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Search Status */}
       {searchQuery && (
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
           Searching for: <span className="font-medium">&quot;{searchQuery}&quot;</span>
-        </div>
-      )}
-      
-      {selectedCategory && (
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Showing recipes from: <span className="font-medium">{selectedCategory}</span>
         </div>
       )}
     </div>

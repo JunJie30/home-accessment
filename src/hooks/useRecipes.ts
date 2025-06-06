@@ -1,29 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  getRandomMeals, 
   getMealById, 
   searchMealsByName, 
   getAllMeals,
   getCategories,
   getMealsByCategory,
-  searchMealsByLetter
 } from '@/lib/api';
 
 // Hook for fetching all meals
-export const useAllMeals = () => {
+export const useAllMeals = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['allMeals'],
     queryFn: getAllMeals,
+    enabled: enabled,
     staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-// Hook for fetching random meals for the home page
-export const useRandomMeals = (count: number = 12) => {
-  return useQuery({
-    queryKey: ['randomMeals', count],
-    queryFn: () => getRandomMeals(count),
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -63,16 +53,6 @@ export const useSearchMeals = (searchTerm: string) => {
     queryFn: () => searchMealsByName(searchTerm),
     enabled: !!searchTerm && searchTerm.length > 2,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-// Hook for searching meals by first letter
-export const useSearchMealsByLetter = (letter: string) => {
-  return useQuery({
-    queryKey: ['searchMealsByLetter', letter],
-    queryFn: () => searchMealsByLetter(letter),
-    enabled: !!letter && letter.length === 1,
-    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 

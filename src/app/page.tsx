@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   useAllMeals, 
   useSearchMeals, 
@@ -11,17 +11,21 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ErrorMessage from '@/components/ErrorMessage';
 import SearchBar from '@/components/SearchBar';
 
-type ViewMode = 'all' | 'search' | 'category';
-
 export default function Home() {
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get current parameters from URL
+  const category = searchParams.get('category') || '';
+  const search = searchParams.get('search') || '';
+  
+  // Determine view mode - now supports both category AND search
+  const viewMode = category && search ? 'both' : search ? 'search' : category ? 'category' : 'all';
 
-  // Fetch data based on current view mode
-  const allMealsQuery = useAllMeals();
-  const searchQuery_result = useSearchMeals(viewMode === 'search' ? searchQuery : '');
-  const categoryQuery = useMealsByCategory(viewMode === 'category' ? selectedCategory : '');
+  // Only fetch data for the current view mode
+  const allMealsQuery = useAllMeals(viewMode === 'all');
+  const searchQuery_result = useSearchMeals(viewMode === 'search' ? search : '');
+  const categoryQuery = useMealsByCategory(viewMode === 'category' || viewMode === 'both' ? category : '');
 
   // Determine which data to show
   const getCurrentData = () => {
@@ -40,6 +44,20 @@ export default function Home() {
           error: categoryQuery.error,
           refetch: categoryQuery.refetch,
         };
+      case 'both':
+        // Filter category results by search term locally
+        const filteredData = categoryQuery.data?.filter(meal => 
+          meal.name.toLowerCase().includes(search.toLowerCase()) ||
+          meal.ingredients.some(ingredient => 
+            ingredient.name.toLowerCase().includes(search.toLowerCase())
+          )
+        );
+        return {
+          data: filteredData,
+          isLoading: categoryQuery.isLoading,
+          error: categoryQuery.error,
+          refetch: categoryQuery.refetch,
+        };
       default:
         return {
           data: allMealsQuery.data,
@@ -52,20 +70,19 @@ export default function Home() {
 
   const { data: recipes, isLoading, error, refetch } = getCurrentData();
 
+  // URL parameter update functions
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setViewMode('search');
-  };
-
-  const handleCategoryFilter = (category: string) => {
-    setSelectedCategory(category);
-    setViewMode('category');
+    const params = new URLSearchParams(searchParams);
+    if (query) {
+      params.set('search', query);
+    } else {
+      params.delete('search');
+    }
+    router.push(`/?${params.toString()}`);
   };
 
   const handleShowAll = () => {
-    setViewMode('all');
-    setSearchQuery('');
-    setSelectedCategory('');
+    router.push('/');
   };
 
   const getResultsText = () => {
@@ -74,9 +91,11 @@ export default function Home() {
     const count = recipes.length;
     switch (viewMode) {
       case 'search':
-        return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${searchQuery}"`;
+        return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${search}"`;
       case 'category':
-        return `Showing ${count} recipe${count !== 1 ? 's' : ''} from ${selectedCategory}`;
+        return `Showing ${count} recipe${count !== 1 ? 's' : ''} from ${category}`;
+      case 'both':
+        return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${search}" in ${category}`;
       default:
         return `Explore our collection of ${count} delicious recipes`;
     }
@@ -103,7 +122,6 @@ export default function Home() {
         {/* Search Bar */}
         <SearchBar
           onSearch={handleSearch}
-          onCategoryFilter={handleCategoryFilter}
           onShowAll={handleShowAll}
           isLoading={isLoading}
         />
@@ -125,7 +143,8 @@ export default function Home() {
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
                 {viewMode === 'search' ? 'Search Results' : 
-                 viewMode === 'category' ? `${selectedCategory} Recipes` : 
+                 viewMode === 'category' ? `${category} Recipes` : 
+                 viewMode === 'both' ? `"${search}" in ${category}` :
                  'All Recipes'}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
@@ -154,9 +173,11 @@ export default function Home() {
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {viewMode === 'search' 
-                ? `No recipes found for "${searchQuery}". Try a different search term.`
+                ? `No recipes found for "${search}". Try a different search term.`
                 : viewMode === 'category'
-                ? `No recipes found in the ${selectedCategory} category.`
+                ? `No recipes found in the ${category} category.`
+                : viewMode === 'both'
+                ? `No recipes found for "${search}" in the ${category} category. Try a different search term or category.`
                 : 'No recipes available at the moment.'
               }
             </p>
