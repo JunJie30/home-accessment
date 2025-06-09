@@ -2,57 +2,37 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://www.themealdb.com/api/json/v1/1';
 
-// Get all categories
-export const getCategories = async (): Promise<string[]> => {
-  try {
-    const response = await axios.get<CategoriesResponse>(`${API_BASE_URL}/categories.php`);
-    return response.data.categories?.map((cat: Category) => cat.strCategory) || [];
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-};
-
-// Get all meals from all categories (optimized approach)
+// Get all meals (simplified approach without categories)
 export const getAllMeals = async (): Promise<ProcessedMeal[]> => {
   try {
+    // Fetch popular meals by searching for common letters
+    const letters = ['a', 'b', 'c', 'd', 'e'];
+    const mealsPerLetter = 5;
     
-    // Strategy: Use fewer categories and fewer meals per category, but process in parallel
-    const categories = ['Chicken', 'Seafood', 'Beef', 'Dessert']; // Reduced from 8 to 4 categories
-    const mealsPerCategory = 6; // Reduced from 10 to 6 per category
-    
-    // Process all categories in parallel instead of sequentially
-    const categoryPromises = categories.map(async (category) => {
+    // Process all letters in parallel
+    const letterPromises = letters.map(async (letter) => {
       try {
-        const response = await axios.get<MealsResponse>(`${API_BASE_URL}/filter.php?c=${category}`);
+        const response = await axios.get<MealsResponse>(`${API_BASE_URL}/search.php?f=${letter}`);
         
         if (response.data.meals) {
           // Take fewer meals but process them in parallel
-          const basicMeals = response.data.meals.slice(0, mealsPerCategory);
+          const basicMeals = response.data.meals.slice(0, mealsPerLetter);
           
-          // Fetch all meal details for this category in parallel
-          const mealPromises = basicMeals.map(basicMeal => getMealById(basicMeal.idMeal));
-          const fullMeals = await Promise.allSettled(mealPromises);
-          
-          // Filter out any failed requests and return successful ones
-          return fullMeals
-            .filter((result): result is PromiseFulfilledResult<ProcessedMeal | null> => 
-              result.status === 'fulfilled' && result.value !== null
-            )
-            .map(result => result.value as ProcessedMeal);
+          // Process all meals (they already have full details from search endpoint)
+          return basicMeals.map(meal => processMeal(meal));
         }
         return [];
       } catch (error) {
-        console.error(`Error fetching category ${category}:`, error);
+        console.error(`Error fetching meals starting with ${letter}:`, error);
         return [];
       }
     });
 
-    // Wait for all categories to complete in parallel
-    const categoryResults = await Promise.allSettled(categoryPromises);
+    // Wait for all letters to complete in parallel
+    const letterResults = await Promise.allSettled(letterPromises);
     
     // Flatten all results
-    const allMeals = categoryResults
+    const allMeals = letterResults
       .filter((result): result is PromiseFulfilledResult<ProcessedMeal[]> => result.status === 'fulfilled')
       .flatMap(result => result.value);
 
@@ -88,36 +68,6 @@ export const searchMealsByName = async (name: string): Promise<ProcessedMeal[]> 
     return [];
   } catch (error) {
     console.error('Error searching meals:', error);
-    return [];
-  }
-};
-
-// Get meals by category
-export const getMealsByCategory = async (category: string): Promise<ProcessedMeal[]> => {
-  try {
-    const response = await axios.get<MealsResponse>(`${API_BASE_URL}/filter.php?c=${category}`);
-        
-    if (response.data.meals) {
-      // Filter endpoint returns basic info, fetch full details for first few
-      const basicMeals = response.data.meals.slice(0, 12);
-      const fullMeals: ProcessedMeal[] = [];
-      
-      for (const basicMeal of basicMeals) {
-        try {
-          const fullMeal = await getMealById(basicMeal.idMeal);
-          if (fullMeal) {
-            fullMeals.push(fullMeal);
-          }
-        } catch (error) {
-          console.error(`Error fetching full meal details for ${basicMeal.idMeal}:`, error);
-        }
-      }
-            
-      return fullMeals;
-    }
-    return [];
-  } catch (error) {
-    console.error('Error fetching meals by category:', error);
     return [];
   }
 };

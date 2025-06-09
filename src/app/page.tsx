@@ -4,29 +4,27 @@ import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   useAllMeals, 
-  useSearchMeals, 
-  useMealsByCategory 
+  useSearchMeals
 } from '@/hooks/useRecipes';
 import RecipeCard from '@/components/RecipeCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ErrorMessage from '@/components/ErrorMessage';
 import SearchBar from '@/components/SearchBar';
+import { Button } from '@/components/ui/button';
 
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
   // Get current parameters from URL
-  const category = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
   
-  // Determine view mode - now supports both category AND search
-  const viewMode = category && search ? 'both' : search ? 'search' : category ? 'category' : 'all';
+  // Determine view mode - only search or all
+  const viewMode = search ? 'search' : 'all';
 
   // Only fetch data for the current view mode
   const allMealsQuery = useAllMeals(viewMode === 'all');
   const searchQuery_result = useSearchMeals(viewMode === 'search' ? search : '');
-  const categoryQuery = useMealsByCategory(viewMode === 'category' || viewMode === 'both' ? category : '');
 
   // Determine which data to show
   const getCurrentData = () => {
@@ -37,27 +35,6 @@ function HomeContent() {
           isLoading: searchQuery_result.isLoading,
           error: searchQuery_result.error,
           refetch: searchQuery_result.refetch,
-        };
-      case 'category':
-        return {
-          data: categoryQuery.data,
-          isLoading: categoryQuery.isLoading,
-          error: categoryQuery.error,
-          refetch: categoryQuery.refetch,
-        };
-      case 'both':
-        // Filter category results by search term locally
-        const filteredData = categoryQuery.data?.filter(meal => 
-          meal.name.toLowerCase().includes(search.toLowerCase()) ||
-          meal.ingredients.some(ingredient => 
-            ingredient.name.toLowerCase().includes(search.toLowerCase())
-          )
-        );
-        return {
-          data: filteredData,
-          isLoading: categoryQuery.isLoading,
-          error: categoryQuery.error,
-          refetch: categoryQuery.refetch,
         };
       default:
         return {
@@ -93,10 +70,6 @@ function HomeContent() {
     switch (viewMode) {
       case 'search':
         return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${search}"`;
-      case 'category':
-        return `Showing ${count} recipe${count !== 1 ? 's' : ''} from ${category}`;
-      case 'both':
-        return `Found ${count} recipe${count !== 1 ? 's' : ''} for "${search}" in ${category}`;
       default:
         return `Explore our collection of ${count} delicious recipes`;
     }
@@ -143,10 +116,7 @@ function HomeContent() {
           <>
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                {viewMode === 'search' ? 'Search Results' : 
-                 viewMode === 'category' ? `${category} Recipes` : 
-                 viewMode === 'both' ? `"${search}" in ${category}` :
-                 'All Recipes'}
+                {viewMode === 'search' ? 'Search Results' : 'All Recipes'}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
                 {getResultsText()}
@@ -175,19 +145,15 @@ function HomeContent() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {viewMode === 'search' 
                 ? `No recipes found for "${search}". Try a different search term.`
-                : viewMode === 'category'
-                ? `No recipes found in the ${category} category.`
-                : viewMode === 'both'
-                ? `No recipes found for "${search}" in the ${category} category. Try a different search term or category.`
                 : 'No recipes available at the moment.'
               }
             </p>
-            <button
+            <Button
               onClick={handleShowAll}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
             >
               Show All Recipes
-            </button>
+            </Button>
           </div>
         )}
       </main>

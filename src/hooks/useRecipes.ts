@@ -3,8 +3,6 @@ import {
   getMealById, 
   searchMealsByName, 
   getAllMeals,
-  getCategories,
-  getMealsByCategory,
 } from '@/lib/api';
 
 // Hook for fetching all meals
@@ -13,25 +11,6 @@ export const useAllMeals = (enabled: boolean = true) => {
     queryKey: ['allMeals'],
     queryFn: getAllMeals,
     enabled: enabled,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-// Hook for fetching categories
-export const useCategories = () => {
-  return useQuery({
-    queryKey: ['categories'],
-    queryFn: getCategories,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-  });
-};
-
-// Hook for fetching meals by category
-export const useMealsByCategory = (category: string) => {
-  return useQuery({
-    queryKey: ['mealsByCategory', category],
-    queryFn: () => getMealsByCategory(category),
-    enabled: !!category,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };

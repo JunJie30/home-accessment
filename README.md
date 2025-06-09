@@ -1,42 +1,43 @@
 # Recipe Explorer Lite
 
-A lightweight recipe browsing application built with Next.js 15, TypeScript, Tailwind CSS, and React Query. Browse delicious recipes from around the world and share your feedback!
+A modern, responsive web application built with **Next.js 14**, **TypeScript**, and **Tailwind CSS** that allows users to explore and search through a vast collection of recipes from [TheMealDB API](https://www.themealdb.com/).
 
-## 🚀 Features
+## ✨ Features
 
-- **Comprehensive Recipe Browsing**: Explore recipes from all categories in TheMealDB
-- **Advanced Search**: Search recipes by name with real-time results
-- **Category Filtering**: Filter recipes by cuisine categories (Beef, Chicken, Dessert, etc.)
-- **Recipe Details**: View comprehensive recipe information including ingredients, instructions, and cooking videos
-- **Feedback System**: Submit reviews and ratings for recipes
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Dark Mode Support**: Automatic dark/light theme based on system preferences
-- **Loading States**: Smooth loading skeletons and error handling
-- **Modern UI**: Clean, accessible interface with smooth animations
-- **Centralized Type System**: Well-organized TypeScript types for maintainability
+- **Comprehensive Recipe Browsing**: Explore a diverse collection of recipes from TheMealDB
+- **Smart Search**: Real-time recipe search with debounced input and intelligent results
+- **Responsive Design**: Seamless experience across desktop, tablet, and mobile devices
+- **Modern UI/UX**: Clean, intuitive interface with smooth animations and loading states
+- **Performance Optimized**: Efficient data fetching with React Query caching and background updates
+- **Accessibility**: WCAG compliant with proper ARIA labels and keyboard navigation
+- **Recipe Details**: Comprehensive recipe pages with ingredients, instructions, and nutritional info
+- **Feedback System**: User feedback and rating system for recipes (demo implementation)
+- **Error Handling**: Robust error boundaries with user-friendly retry mechanisms
+- **Loading States**: Skeleton screens and progressive loading for optimal UX
+- **Search Persistence**: URL-based search state management for shareable links
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript with centralized type definitions
-- **Styling**: Tailwind CSS with custom utilities
-- **Data Fetching**: React Query (@tanstack/react-query) with intelligent caching
-- **HTTP Client**: Axios
-- **API**: TheMealDB (https://www.themealdb.com/api.php)
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: React Query (TanStack Query)
+- **API**: TheMealDB API
+- **Image Optimization**: Next.js Image component
+- **Icons**: Heroicons
+- **Deployment**: Vercel ready
 
 ## 📁 Project Structure
 
 ```
 src/
-├── app/                    # Next.js App Router pages
+├── app/                   # Next.js App Router pages
 │   ├── layout.tsx         # Root layout with providers
-│   ├── page.tsx           # Home page with search and recipe grid
-│   ├── providers.tsx      # React Query provider setup
-│   ├── recipe/[id]/       # Dynamic recipe detail pages
-│   └── globals.css        # Global styles and utilities
-├── components/            # Reusable UI components
+│   ├── page.tsx           # Home page with search and results
+│   └── recipe/[id]/       # Dynamic recipe detail pages
+│       └── page.tsx       # Individual recipe page
+├── components/            # Reusable UI components  
 │   ├── RecipeCard.tsx     # Recipe card component
-│   ├── FeedbackForm.tsx   # Recipe feedback form
 │   ├── SearchBar.tsx      # Search and filter component
 │   ├── LoadingSkeleton.tsx # Loading state component
 │   └── ErrorMessage.tsx   # Error state component
@@ -89,7 +90,7 @@ npm start
 
 The application uses React Query for efficient data fetching, caching, and state management:
 
-- **Intelligent Caching**: Recipes cached for 5-10 minutes, categories for 30 minutes
+- **Intelligent Caching**: Recipes cached for 5-10 minutes to reduce API calls
 - **Background Refetching**: Data automatically refreshed when stale
 - **Error Handling**: Comprehensive error states with retry functionality
 - **Loading States**: Skeleton loaders provide smooth user experience
@@ -98,20 +99,15 @@ The application uses React Query for efficient data fetching, caching, and state
 ### API Integration
 
 **TheMealDB API Endpoints Used:**
-- `GET /categories.php` - Fetch all recipe categories
-- `GET /filter.php?c={category}` - Get recipes by category
 - `GET /search.php?s={name}` - Search recipes by name
-- `GET /search.php?f={letter}` - Search recipes by first letter
+- `GET /search.php?f={letter}` - Search recipes by first letter  
 - `GET /lookup.php?i={id}` - Get detailed recipe by ID
 - `GET /random.php` - Fetch random recipes (fallback)
 
 ### Custom Hooks
 
 - `useAllMeals()` - Fetches comprehensive recipe collection
-- `useCategories()` - Fetches available recipe categories
-- `useMealsByCategory(category)` - Fetches recipes from specific category
 - `useSearchMeals(query)` - Searches recipes by name
-- `useSearchMealsByLetter(letter)` - Searches recipes by first letter
 - `useMeal(id)` - Fetches detailed recipe information
 - `useFeedbackMutation()` - Handles feedback form submissions
 
@@ -141,20 +137,15 @@ The application uses React Query for efficient data fetching, caching, and state
 - **Component Props**: Strongly typed component interfaces
 - **Hook Return Types**: Explicit return type definitions
 
-## 🔍 Search & Filter Features
+## 🔍 Search Features
 
 ### Search Functionality
 - **Real-time Search**: Debounced search with instant results
 - **Minimum Query Length**: Search activates after 3 characters
 - **Search Feedback**: Clear indication of search terms and results count
 
-### Category Filtering
-- **Dynamic Categories**: Categories loaded from API
-- **Exclusive Filtering**: Category filter clears search and vice versa
-- **Clear All**: Easy reset to show all recipes
-
 ### Result Management
-- **Smart State Management**: Separate states for all/search/category views
+- **Smart State Management**: Separate states for all/search views
 - **No Results Handling**: Helpful messages and suggestions
 - **Result Counts**: Clear indication of how many recipes found
 
@@ -189,30 +180,34 @@ The application uses React Query for efficient data fetching, caching, and state
 
 ### Performance Considerations
 
-- **API Call Optimization**: Limited to 8 recipes per category to avoid excessive API calls
+- **API Call Optimization**: Limited recipe fetching to avoid excessive API calls
 - **Image Loading**: Uses Next.js Image optimization but depends on external CDN
 - **Search Debouncing**: 500ms delay balances responsiveness with API efficiency
 
 ## 📝 Environment Variables
 
-No environment variables are required for basic functionality. The app uses the public TheMealDB API.
+No environment variables are required for basic functionality. The application uses the public TheMealDB API endpoints.
+
+Optional configuration:
+```env
+NEXT_PUBLIC_API_URL=https://www.themealdb.com/api/json/v1/1
+```
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [TheMealDB](https://www.themealdb.com/) for providing the free recipe API
-- [Next.js](https://nextjs.org/) team for the excellent framework
+- [TheMealDB](https://www.themealdb.com/) for providing the comprehensive recipe API
+- [Next.js](https://nextjs.org/) team for the amazing React framework
 - [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
-- [TanStack Query](https://tanstack.com/query) for powerful data fetching capabilities
-# home-accessment
+- [TanStack Query](https://tanstack.com/query) for powerful data synchronization

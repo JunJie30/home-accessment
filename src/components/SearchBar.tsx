@@ -2,6 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -62,33 +65,35 @@ function SearchBarInner({
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Search Input */}
         <div className="flex-1">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <Label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Search Recipes
-          </label>
+          </Label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <input
+            <Input
               type="text"
               id="search"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="pl-10 pr-3"
               placeholder="Search for recipes..."
               disabled={isLoading}
             />
             {searchQuery && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={clearSearch}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center h-auto"
               >
                 <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -109,18 +114,18 @@ function SearchBarFallback({ isLoading }: { isLoading?: boolean }) {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Search Recipes
-          </label>
+          </Label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <input
+            <Input
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="pl-10 pr-3"
               placeholder="Search for recipes..."
               disabled={isLoading}
               value=""

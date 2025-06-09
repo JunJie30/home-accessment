@@ -59,17 +59,6 @@ type MealsResponse = {
   meals: Meal[] | null;
 }
 
-type Category = {
-  idCategory: string;
-  strCategory: string;
-  strCategoryThumb: string;
-  strCategoryDescription: string;
-}
-
-type CategoriesResponse = {
-  categories: Category[];
-}
-
 // Processed/Clean Types for Application Use
 type Ingredient = {
   name: string;
@@ -158,7 +147,6 @@ type Rating = 1 | 2 | 3 | 4 | 5;
 
 // Search and Filter Types (for future use)
 type SearchFilters = {
-  category?: string;
   area?: string;
   ingredient?: string;
 }

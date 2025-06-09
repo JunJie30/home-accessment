@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { useFeedbackMutation } from '@/hooks/useRecipes';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function FeedbackForm({ recipeId, recipeName }: FeedbackFormProps) {
   const [formData, setFormData] = useState<FeedbackFormData>({
@@ -37,11 +42,18 @@ export default function FeedbackForm({ recipeId, recipeName }: FeedbackFormProps
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'rating' ? parseInt(value) : value,
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      rating: parseInt(value),
     }));
   };
 
@@ -56,79 +68,75 @@ export default function FeedbackForm({ recipeId, recipeName }: FeedbackFormProps
       </p>
 
       {!showForm ? (
-        <button
+        <Button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200 font-medium"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3"
         >
           Write a Review
-        </button>
+        </Button>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">
                 Your Name *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 placeholder="Enter your name"
               />
             </div>
             
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div className="space-y-2">
+              <Label htmlFor="email">
                 Email Address *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 placeholder="Enter your email"
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="rating" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="rating">
               Rating *
-            </label>
-            <select
-              id="rating"
-              name="rating"
-              value={formData.rating}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-            >
-              <option value={5}>⭐⭐⭐⭐⭐ Excellent (5 stars)</option>
-              <option value={4}>⭐⭐⭐⭐ Very Good (4 stars)</option>
-              <option value={3}>⭐⭐⭐ Good (3 stars)</option>
-              <option value={2}>⭐⭐ Fair (2 stars)</option>
-              <option value={1}>⭐ Poor (1 star)</option>
-            </select>
+            </Label>
+            <Select value={formData.rating.toString()} onValueChange={handleSelectChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a rating" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">⭐⭐⭐⭐⭐ Excellent (5 stars)</SelectItem>
+                <SelectItem value="4">⭐⭐⭐⭐ Very Good (4 stars)</SelectItem>
+                <SelectItem value="3">⭐⭐⭐ Good (3 stars)</SelectItem>
+                <SelectItem value="2">⭐⭐ Fair (2 stars)</SelectItem>
+                <SelectItem value="1">⭐ Poor (1 star)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div>
-            <label htmlFor="comment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="comment">
               Your Review *
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id="comment"
               name="comment"
               value={formData.comment}
               onChange={handleInputChange}
               required
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-vertical"
               placeholder={`Tell us about your experience making ${recipeName}...`}
             />
           </div>
@@ -160,10 +168,10 @@ export default function FeedbackForm({ recipeId, recipeName }: FeedbackFormProps
           )}
 
           <div className="flex gap-4">
-            <button
+            <Button
               type="submit"
               disabled={feedbackMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg transition-colors duration-200 font-medium flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 flex items-center gap-2"
             >
               {feedbackMutation.isPending && (
                 <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,15 +179,16 @@ export default function FeedbackForm({ recipeId, recipeName }: FeedbackFormProps
                 </svg>
               )}
               {feedbackMutation.isPending ? 'Submitting...' : 'Submit Review'}
-            </button>
+            </Button>
             
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => setShowForm(false)}
-              className="bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-6 py-3 rounded-lg transition-colors duration-200 font-medium"
+              className="px-6 py-3"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
