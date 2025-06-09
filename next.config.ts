@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Ensure proper handling of dynamic routes
+  trailingSlash: false,
+  // Ensure the app is optimized for dynamic content
+  experimental: {
+    // Enable modern features for better dynamic routing
+    optimizePackageImports: ['@tanstack/react-query'],
+  },
 };
 
 export default nextConfig;

@@ -2,13 +2,24 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { useMeal } from '@/hooks/useRecipes';
 import FeedbackForm from '@/components/FeedbackForm';
 import { useParams } from "next/navigation";
 
+// This ensures the page is dynamically rendered
+export const dynamic = 'force-dynamic';
+
 export default function RecipePage() {
-  const { id } = useParams();
-  const { data: recipe, isLoading, error } = useMeal(id as string);
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  
+  // Validate ID parameter
+  if (!id || typeof id !== 'string') {
+    notFound();
+  }
+
+  const { data: recipe, isLoading, error } = useMeal(id);
 
   if (isLoading) {
     return (
@@ -30,31 +41,8 @@ export default function RecipePage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Recipe Not Found
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              The recipe you&apos;re looking for doesn&apos;t exist or couldn&apos;t be loaded.
-            </p>
-            <Link 
-              href="/"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!recipe) {
-    return null;
+  if (error || !recipe) {
+    notFound();
   }
 
   return (
