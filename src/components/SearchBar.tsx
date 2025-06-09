@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface SearchBarProps {
@@ -9,7 +9,7 @@ interface SearchBarProps {
   isLoading?: boolean;
 }
 
-export default function SearchBar({ 
+function SearchBarInner({ 
   onSearch, 
   onShowAll, 
   isLoading = false 
@@ -101,5 +101,42 @@ export default function SearchBar({
         </div>
       )}
     </div>
+  );
+}
+
+function SearchBarFallback({ isLoading }: { isLoading?: boolean }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Search Recipes
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              placeholder="Search for recipes..."
+              disabled={isLoading}
+              value=""
+              readOnly
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SearchBar(props: SearchBarProps) {
+  return (
+    <Suspense fallback={<SearchBarFallback isLoading={props.isLoading} />}>
+      <SearchBarInner {...props} />
+    </Suspense>
   );
 } 
